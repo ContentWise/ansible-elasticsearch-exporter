@@ -1,0 +1,32 @@
+---
+- name: ensure Prometheus exporters directory exist
+  file:
+    path: "{{ elasticsearch_exporter_install_dir }}"
+    state: directory
+
+- name: unarchive Elasticsearch Exporter
+  unarchive:
+    remote_src: yes
+    dest: "{{ elasticsearch_exporter_install_dir }}"
+    src: "{{ elasticsearch_exporter_url }}"
+
+- name: create symlink to the current release
+  file:
+    src: "{{ elasticsearch_exporter_binary }}"
+    path: "{{ elasticsearch_exporter_symlink }}"
+    state: link
+  notify: restart elasticsearch exporter
+
+- name: create systemd script
+  template:
+    src: elasticsearch_exporter.service.j2
+    dest: /etc/systemd/system/elasticsearch-exporter.service
+  notify: restart elasticsearch exporter
+
+- meta: flush_handlers
+
+- name: make sure Elasticsearch Exporter is started
+  service:
+    name: elasticsearch-exporter
+    state: started
+    enabled: yes
